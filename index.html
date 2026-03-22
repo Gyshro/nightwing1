@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERMINAL SEGURO</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root { --blue: #00d4ff; --green: #00ff88; --glow: 0 0 8px #00d4ff88, 0 0 24px #00d4ff33; }
+body { background: #000010; font-family: 'Share Tech Mono', monospace; overflow: hidden; height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; }
+.scanlines { position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.13) 2px, rgba(0,0,0,0.13) 4px); pointer-events: none; z-index: 9999; }
+.habbo-bg { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(ellipse at 20% 30%, #0a0520 0%, #000008 60%, #000010 100%); }
+.habbo-sky-grad { position: absolute; inset: 0; background: linear-gradient(180deg, #03000f 0%, #06001a 40%, #080020 70%, #04001a 100%); }
+.star { position: absolute; border-radius: 50%; background: #fff; }
+.habbo-ground { position: absolute; bottom: 0; left: 0; right: 0; height: 18%; background: linear-gradient(180deg, #0a0812 0%, #060610 100%); border-top: 1px solid #1a1030; }
+.habbo-ground::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: #1a1028; }
+.habbo-sidewalk { position: absolute; bottom: 18%; left: 0; right: 0; height: 24px; background: linear-gradient(180deg, #18142a 0%, #100e20 100%); border-top: 1px solid #2a2040; }
+.monitor-wrap { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; }
+.monitor-outer { width: min(680px, 96vw); background: linear-gradient(180deg, #0a1428 0%, #060d1c 100%); border: 2px solid #00d4ff55; border-radius: 6px 6px 4px 4px; box-shadow: 0 0 40px #00d4ff33, 0 0 80px #00d4ff11, inset 0 0 30px rgba(0,40,80,0.3); overflow: hidden; position: relative; }
+.monitor-topbar { height: 28px; background: linear-gradient(90deg, #060d1c, #0d1a30, #060d1c); border-bottom: 1px solid #00d4ff33; display: flex; align-items: center; padding: 0 12px; gap: 8px; }
+.monitor-dot { width: 8px; height: 8px; border-radius: 50%; }
+.monitor-dot.r { background: #ff4466; box-shadow: 0 0 4px #ff4466; }
+.monitor-dot.y { background: #ffaa00; box-shadow: 0 0 4px #ffaa00; }
+.monitor-dot.g { background: #00ff88; box-shadow: 0 0 4px #00ff88; }
+.monitor-title-bar { flex: 1; text-align: center; font-size: 10px; letter-spacing: 4px; color: #00d4ff66; text-transform: uppercase; }
+.monitor-screen { position: relative; height: min(480px, 78vh); background: #020810; overflow: hidden; }
+.screen-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(0,80,160,0.12) 0%, transparent 70%); pointer-events: none; z-index: 5; }
+.screen-glitch { position: absolute; inset: 0; pointer-events: none; z-index: 6; animation: glitch-pop 7s ease-in-out infinite; }
+@keyframes glitch-pop { 0%,88%,100%{opacity:0;transform:none;} 90%{opacity:0.4;clip-path:polygon(0 30%,100% 30%,100% 34%,0 34%);transform:translateX(-4px);background:rgba(0,212,255,0.08);} 93%{opacity:0.3;clip-path:polygon(0 65%,100% 65%,100% 68%,0 68%);transform:translateX(3px);background:rgba(0,212,255,0.08);} }
+.screen-scan { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,transparent,#00d4ff55,#00d4ffaa,#00d4ff55,transparent); animation: screen-scan-move 5s linear infinite; pointer-events: none; z-index: 7; }
+@keyframes screen-scan-move { from{top:-2px;} to{top:100%;} }
+.monitor-outer::before { content: ''; position: absolute; inset: 28px 0 0 0; background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,180,255,0.012) 3px,rgba(0,180,255,0.012) 4px); pointer-events: none; z-index: 8; }
+.mon-corner { position: absolute; width: 14px; height: 14px; border-color: #00d4ff66; border-style: solid; z-index: 10; }
+.mon-tl { top: 4px; left: 4px; border-width: 1px 0 0 1px; }
+.mon-tr { top: 4px; right: 4px; border-width: 1px 1px 0 0; }
+.mon-bl { bottom: 4px; left: 4px; border-width: 0 0 1px 1px; }
+.mon-br { bottom: 4px; right: 4px; border-width: 0 1px 1px 0; }
+.monitor-stand { width: 60px; height: 16px; background: linear-gradient(180deg,#080f20,#040810); border: 1px solid #00d4ff22; border-top: none; margin: 0 auto; }
+.monitor-base { width: 140px; height: 8px; background: linear-gradient(180deg,#060c18,#030609); border: 1px solid #00d4ff22; border-top: none; border-radius: 0 0 4px 4px; margin: 0 auto; }
+.scene { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.7s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.scene.active { opacity: 1; pointer-events: all; }
+
+/* Scene 1 */
+#s-habbo { gap: 14px; }
+.habblet-logo { font-family:'VT323',monospace; font-size:clamp(28px,5vw,44px); color:#cc88ff; text-shadow:0 0 12px #cc88ffaa,0 0 30px #cc88ff44; letter-spacing:4px; animation:logo-glow 2s ease-in-out infinite; }
+@keyframes logo-glow { 0%,100%{text-shadow:0 0 12px #cc88ffaa,0 0 30px #cc88ff44;} 50%{text-shadow:0 0 20px #cc88ffff,0 0 50px #cc88ff88;} }
+.habblet-disconnected { font-family:'Orbitron',sans-serif; font-size:clamp(10px,2vw,14px); font-weight:700; letter-spacing:6px; color:#ff4466; text-shadow:0 0 8px #ff446688; text-transform:uppercase; animation:dc-blink 1.5s ease-in-out infinite; }
+@keyframes dc-blink { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+.dc-icon { font-size:28px; color:#ff4466; text-shadow:0 0 10px #ff446688; animation:dc-blink 1.5s ease-in-out infinite; }
+.dc-detail { font-size:9px; letter-spacing:3px; color:#ff446644; text-transform:uppercase; }
+.dc-line { width:260px; height:1px; background:linear-gradient(90deg,transparent,#ff446644,transparent); }
+.connect-btn { font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; letter-spacing:5px; text-transform:uppercase; color:#000d1a; background:#00d4ff; border:none; padding:14px 40px; cursor:pointer; clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%); box-shadow:var(--glow); transition:all 0.2s; animation:btn-pulse 2s ease-in-out infinite; }
+@keyframes btn-pulse { 0%,100%{box-shadow:0 0 12px #00d4ffcc,0 0 40px #00d4ff55;} 50%{box-shadow:0 0 20px #00d4ffff,0 0 60px #00d4ff88;} }
+.connect-btn:hover { transform:scale(1.05); background:#fff; }
+
+/* Scene 2 */
+#s-download { gap: 20px; padding: 24px 32px; }
+.dl-header { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.dl-title { font-family:'Orbitron',sans-serif; font-size:clamp(14px,2.5vw,20px); font-weight:700; letter-spacing:5px; color:#00d4ff; text-shadow:var(--glow); }
+.dl-subtitle { font-size:10px; letter-spacing:3px; color:#00d4ff55; text-transform:uppercase; }
+.file-list { width:100%; max-width:520px; display:flex; flex-direction:column; gap:5px; }
+.file-item { display:flex; align-items:center; gap:12px; padding:9px 14px; background:rgba(0,20,50,0.5); border:1px solid #00d4ff11; border-radius:3px; font-size:12px; color:#00d4ff88; opacity:0; transform:translateX(-10px); transition:opacity 0.3s ease, transform 0.3s ease, background 0.2s, border-color 0.2s, box-shadow 0.2s; cursor:default; position: relative; }
+.file-item.show { opacity:1; transform:translateX(0); }
+.file-item.done { border-color:#00d4ff22; cursor:pointer; }
+.file-item.done:hover { background:rgba(0,60,120,0.5); border-color:#00d4ff55; box-shadow:0 0 12px #00d4ff22; }
+.file-item.done:hover .fi-name { color:#00d4ff; }
+.file-item.active { border-color:#00d4ff33; background:rgba(0,40,80,0.4); }
+.file-item.opened { border-color:#00ff8833; background:rgba(0,50,30,0.3); }
+.file-item.opened .fi-name { color:#00ff88aa; }
+.fi-folder { flex-shrink:0; }
+.folder-svg { width:22px; height:18px; }
+.fi-name { flex:1; letter-spacing:1px; transition:color 0.2s; }
+.fi-size { font-size:10px; color:#00d4ff44; min-width:55px; text-align:right; }
+.fi-status { font-size:14px; min-width:18px; text-align:center; }
+.fi-hint { font-size:9px; color:#00d4ff33; letter-spacing:2px; opacity:0; transition:opacity 0.2s; position:absolute; right:42px; top:50%; transform:translateY(-50%); }
+.file-item.done:hover .fi-hint { opacity:1; }
+.dl-progress-wrap { width:100%; max-width:520px; display:flex; flex-direction:column; gap:6px; }
+.dl-progress-labels { display:flex; justify-content:space-between; font-size:10px; letter-spacing:2px; color:#00d4ff66; }
+.dl-bar-track { width:100%; height:6px; background:rgba(0,180,255,0.1); border:1px solid rgba(0,180,255,0.2); overflow:hidden; }
+.dl-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,#003080,#00d4ff,#fff); box-shadow:0 0 8px #00d4ff; transition:width 0.2s linear; }
+.dl-log { font-size:9px; letter-spacing:1px; color:#00d4ff33; height:16px; overflow:hidden; }
+.dl-done-hint { font-size:10px; letter-spacing:3px; color:#00ff8866; text-transform:uppercase; opacity:0; transition:opacity 0.6s; text-align:center; }
+.dl-done-hint.show { opacity:1; animation:hint-pulse 1.5s ease-in-out infinite; }
+@keyframes hint-pulse { 0%,100%{opacity:0.7;} 50%{opacity:1; color:#00ff88; text-shadow:0 0 8px #00ff8888;} }
+
+/* Scene 3 */
+#s-msg { background: #000008; padding: 0; }
+.msg-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 24px 28px; gap: 0; overflow: hidden; }
+.msg-back-btn { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:3px; color:#00d4ff66; background:transparent; border:1px solid #00d4ff22; padding:6px 16px; cursor:pointer; align-self:flex-start; transition:all 0.2s; margin-bottom:20px; text-transform:uppercase; }
+.msg-back-btn:hover { color:#00d4ff; border-color:#00d4ff55; background:rgba(0,180,255,0.08); }
+.msg-from-row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.msg-avatar { width:36px; height:36px; border-radius:3px; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; flex-shrink:0; border:1px solid; }
+.msg-sender-name { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase; }
+.msg-time { font-size:9px; color:#00d4ff33; letter-spacing:2px; margin-left:auto; }
+.msg-title-line { font-family:'Orbitron',sans-serif; font-size:clamp(14px,2.2vw,18px); font-weight:700; letter-spacing:2px; padding-bottom:10px; border-bottom:1px solid; margin-bottom:14px; min-height:1.4em; }
+.msg-body-text { font-size:clamp(12px,1.8vw,14px); line-height:1.85; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#00d4ff22 transparent; }
+.msg-body-text::-webkit-scrollbar { width:3px; }
+.msg-body-text::-webkit-scrollbar-thumb { background:#00d4ff22; }
+.msg-cursor { display:inline-block; width:2px; height:1em; vertical-align:middle; margin-left:2px; animation:blink 0.7s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+.msg-file-label { font-size:9px; letter-spacing:3px; color:#00d4ff33; text-transform:uppercase; padding-top:12px; border-top:1px solid #00d4ff11; flex-shrink:0; margin-top:auto; }
+
+/* ── IMAGES: contain + clicável ── */
+.msg-images { margin-top:16px; flex-shrink:0; }
+.msg-images-label { font-size:9px; letter-spacing:3px; color:#00d4ff44; text-transform:uppercase; margin-bottom:10px; }
+.msg-images-row { display:flex; gap:12px; align-items:flex-start; }
+.msg-img-wrap {
+  flex:1; min-width:0;
+  border:1px solid #00d4ff33;
+  border-radius:3px; overflow:hidden;
+  background:#000a18;
+  position:relative;
+  display:flex; align-items:center; justify-content:center;
+  cursor:zoom-in;
+}
+.msg-images-row.single .msg-img-wrap { max-height:240px; }
+.msg-images-row:not(.single) .msg-img-wrap { max-height:180px; }
+.msg-img-wrap img {
+  width:100%; height:auto; max-height:inherit;
+  object-fit:contain;
+  display:block;
+  filter:brightness(0.96);
+  transition:filter 0.25s;
+}
+.msg-img-wrap:hover img { filter:brightness(1); }
+.img-zoom-hint {
+  position:absolute; bottom:5px; right:7px;
+  font-size:9px; letter-spacing:1px; color:#00d4ffcc;
+  background:rgba(0,5,20,0.80); padding:2px 7px; border-radius:2px;
+  pointer-events:none; opacity:0; transition:opacity 0.18s;
+}
+.msg-img-wrap:hover .img-zoom-hint { opacity:1; }
+.img-name-label { position:absolute; bottom:0; left:0; right:0; background:rgba(0,5,20,0.85); font-size:9px; letter-spacing:2px; color:#00d4ff55; padding:4px 8px; text-align:center; }
+.msg-images-row.single .img-name-label { display:none; }
+.msg-img-wrap.img-error img { display:none; }
+.msg-img-wrap.img-error { border:1px dashed #00d4ff33; cursor:default; min-height:50px; }
+.msg-img-wrap.img-error .img-name-label { position:static; background:transparent; color:#00d4ff44; padding:16px 8px; font-size:10px; letter-spacing:2px; display:block !important; }
+
+/* ── LIGHTBOX ── */
+.lightbox {
+  position:fixed; inset:0; z-index:99999;
+  background:rgba(0,0,10,0.96);
+  display:flex; align-items:center; justify-content:center;
+  animation:lb-fade 0.18s ease;
+}
+@keyframes lb-fade { from{opacity:0;} to{opacity:1;} }
+.lightbox-img {
+  max-width:92vw; max-height:90vh;
+  object-fit:contain;
+  border:1px solid #00d4ff44;
+  border-radius:4px;
+  box-shadow:0 0 60px #00d4ff22;
+  touch-action:pinch-zoom;
+  user-select:none;
+  position:relative; z-index:2;
+}
+.lightbox-backdrop {
+  position:absolute; inset:0; cursor:zoom-out; z-index:1;
+}
+.lightbox-close {
+  position:fixed; top:14px; right:18px;
+  font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:3px;
+  color:#00d4ff88; background:rgba(0,5,20,0.92); border:1px solid #00d4ff33;
+  padding:7px 16px; cursor:pointer; text-transform:uppercase; z-index:3;
+  transition:all 0.15s;
+}
+.lightbox-close:hover { color:#00d4ff; border-color:#00d4ff66; }
+
+/* themes */
+.theme-a { --c:#00d4ff; --cbg:rgba(0,180,255,0.12); --ct:#a8e8ff; }
+.theme-b { --c:#00ff88; --cbg:rgba(0,255,136,0.10); --ct:#a8ffd8; }
+.theme-c { --c:#ffaa00; --cbg:rgba(255,170,0,0.10); --ct:#ffe8a8; }
+.theme-d { --c:#cc66ff; --cbg:rgba(200,100,255,0.10); --ct:#e8c8ff; }
+.theme-e { --c:#ff5555; --cbg:rgba(255,80,80,0.10); --ct:#ffc0c0; }
+.msg-avatar { background:var(--cbg); color:var(--c); border-color:color-mix(in srgb, var(--c) 30%, transparent); }
+.msg-sender-name { color:var(--c); }
+.msg-title-line { color:var(--c); border-color:color-mix(in srgb, var(--c) 25%, transparent); }
+.msg-body-text { color:var(--ct); }
+.msg-cursor { background:var(--c); }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<div class="habbo-bg">
+  <div class="habbo-sky-grad"></div>
+  <div id="stars-container"></div>
+  <svg style="position:absolute;bottom:16%;left:50%;transform:translateX(-50%);width:min(860px,100vw);pointer-events:none;opacity:0.75;" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+    <circle cx="720" cy="60" r="32" fill="#e8e0c8" opacity="0.9"/>
+    <circle cx="710" cy="55" r="28" fill="#c8c0a8" opacity="0.3"/>
+    <ellipse cx="760" cy="55" rx="70" ry="28" fill="#1a1030" opacity="0.7"/>
+    <ellipse cx="800" cy="48" rx="55" ry="22" fill="#1a1030" opacity="0.6"/>
+    <ellipse cx="120" cy="45" rx="55" ry="22" fill="#1a1030" opacity="0.5"/>
+    <polygon points="200,460 450,510 450,430 200,380" fill="#2a1a08"/><polygon points="450,510 650,410 650,330 450,430" fill="#1e1206"/><polygon points="200,380 450,430 650,330 400,280" fill="#3a2510"/>
+    <polygon points="220,375 450,422 450,350 220,303" fill="#2a1a08"/><polygon points="450,422 640,326 640,254 450,350" fill="#1e1206"/><polygon points="220,303 450,350 640,254 410,207" fill="#3a2510"/>
+    <polygon points="240,298 450,342 450,272 240,228" fill="#2a1a08"/><polygon points="450,342 630,250 630,180 450,272" fill="#1e1206"/><polygon points="240,228 450,272 630,180 420,136" fill="#3a2510"/>
+    <polygon points="270,222 440,260 440,195 270,157" fill="#2a1a08"/><polygon points="440,260 610,175 610,110 440,195" fill="#1e1206"/><polygon points="270,157 440,195 610,110 438,72" fill="#3a2510"/>
+    <polygon points="310,155 420,185 420,130 310,100" fill="#2a1a08"/><polygon points="420,185 560,118 560,63 420,130" fill="#1e1206"/><polygon points="310,100 420,130 560,63 446,33" fill="#3a2510"/>
+    <rect x="235" y="310" width="22" height="30" rx="11" fill="#c07010" opacity="0.9"/><rect x="237" y="312" width="18" height="22" rx="9" fill="#ffd060" opacity="0.7"/>
+    <rect x="268" y="310" width="22" height="30" rx="11" fill="#c07010" opacity="0.5"/>
+    <rect x="301" y="312" width="22" height="30" rx="11" fill="#c07010" opacity="0.9"/><rect x="303" y="314" width="18" height="22" rx="9" fill="#ffd060" opacity="0.7"/>
+    <rect x="334" y="315" width="22" height="30" rx="11" fill="#c07010" opacity="0.4"/>
+    <rect x="367" y="317" width="22" height="30" rx="11" fill="#c07010" opacity="0.9"/><rect x="369" y="319" width="18" height="22" rx="9" fill="#ffd060" opacity="0.7"/>
+    <rect x="400" y="320" width="22" height="30" rx="11" fill="#c07010" opacity="0.6"/>
+    <rect x="458" y="330" width="20" height="28" rx="10" fill="#c07010" opacity="0.8"/><rect x="460" y="332" width="16" height="20" rx="8" fill="#ffcc50" opacity="0.6"/>
+    <rect x="488" y="318" width="20" height="28" rx="10" fill="#c07010" opacity="0.4"/>
+    <rect x="518" y="306" width="20" height="28" rx="10" fill="#c07010" opacity="0.9"/><rect x="520" y="308" width="16" height="20" rx="8" fill="#ffcc50" opacity="0.7"/>
+    <rect x="548" y="294" width="20" height="28" rx="10" fill="#c07010" opacity="0.5"/>
+    <rect x="578" y="282" width="20" height="28" rx="10" fill="#c07010" opacity="0.9"/><rect x="580" y="284" width="16" height="20" rx="8" fill="#ffcc50" opacity="0.6"/>
+    <rect x="605" y="271" width="20" height="28" rx="10" fill="#c07010" opacity="0.7"/>
+    <rect x="248" y="235" width="20" height="28" rx="10" fill="#c07010" opacity="0.7"/><rect x="250" y="237" width="16" height="20" rx="8" fill="#ffd060" opacity="0.5"/>
+    <rect x="278" y="237" width="20" height="28" rx="10" fill="#c07010" opacity="0.9"/><rect x="280" y="239" width="16" height="20" rx="8" fill="#ffd060" opacity="0.7"/>
+    <rect x="308" y="240" width="20" height="28" rx="10" fill="#c07010" opacity="0.4"/>
+    <rect x="338" y="242" width="20" height="28" rx="10" fill="#c07010" opacity="0.9"/><rect x="340" y="244" width="16" height="20" rx="8" fill="#ffd060" opacity="0.6"/>
+    <rect x="368" y="244" width="20" height="28" rx="10" fill="#c07010" opacity="0.5"/>
+    <rect x="398" y="246" width="20" height="28" rx="10" fill="#c07010" opacity="0.8"/><rect x="400" y="248" width="16" height="20" rx="8" fill="#ffd060" opacity="0.6"/>
+    <rect x="456" y="252" width="18" height="26" rx="9" fill="#c07010" opacity="0.6"/>
+    <rect x="484" y="241" width="18" height="26" rx="9" fill="#c07010" opacity="0.9"/><rect x="486" y="243" width="14" height="18" rx="7" fill="#ffcc50" opacity="0.7"/>
+    <rect x="512" y="229" width="18" height="26" rx="9" fill="#c07010" opacity="0.4"/>
+    <rect x="540" y="218" width="18" height="26" rx="9" fill="#c07010" opacity="0.8"/>
+    <rect x="568" y="207" width="18" height="26" rx="9" fill="#c07010" opacity="0.6"/>
+    <rect x="596" y="196" width="18" height="26" rx="9" fill="#c07010" opacity="0.9"/><rect x="598" y="198" width="14" height="18" rx="7" fill="#ffcc50" opacity="0.6"/>
+    <polygon points="290,418 440,448 450,436 300,406" fill="#500810"/>
+    <text x="368" y="434" font-family="'VT323',monospace" font-size="12" fill="#ff8844" text-anchor="middle" transform="skewX(-12)" opacity="0.9">HABBLET HOTEL</text>
+    <polygon points="290,100 450,142 555,80 396,38" fill="#083858" opacity="0.9"/>
+    <polygon points="295,100 450,140 550,80 396,40" fill="#0a4870" opacity="0.6"/>
+    <ellipse cx="420" cy="105" rx="60" ry="20" fill="#0088cc" opacity="0.15"/>
+    <polygon points="640,330 780,255 780,370 640,445" fill="#1e1206" opacity="0.9"/>
+    <polygon points="640,330 780,255 800,240 660,315" fill="#2e1a08" opacity="0.8"/>
+    <polygon points="660,285 760,235 770,242 670,292" fill="#083858"/>
+    <ellipse cx="830" cy="290" rx="55" ry="80" fill="#100c18"/><ellipse cx="820" cy="275" rx="40" ry="60" fill="#14101e"/><ellipse cx="850" cy="300" rx="35" ry="55" fill="#0c0a14"/>
+    <rect x="185" y="380" width="7" height="55" rx="2" fill="#0a0808"/>
+    <ellipse cx="188" cy="378" rx="22" ry="12" fill="#0a1808" transform="rotate(-20,188,378)"/>
+    <ellipse cx="188" cy="376" rx="18" ry="8" fill="#0c2010" transform="rotate(15,188,376)"/>
+    <ellipse cx="330" cy="370" rx="120" ry="40" fill="#c07010" opacity="0.04"/>
+    <ellipse cx="540" cy="290" rx="80" ry="30" fill="#c07010" opacity="0.04"/>
+  </svg>
+  <div class="habbo-sidewalk"></div>
+  <div class="habbo-ground"></div>
+</div>
+
+<div class="monitor-wrap">
+  <div class="monitor-outer">
+    <div class="mon-corner mon-tl"></div><div class="mon-corner mon-tr"></div>
+    <div class="mon-corner mon-bl"></div><div class="mon-corner mon-br"></div>
+    <div class="monitor-topbar">
+      <div class="monitor-dot r"></div><div class="monitor-dot y"></div><div class="monitor-dot g"></div>
+      <div class="monitor-title-bar" id="topbar-title">HABBLET · CONEXÃO PERDIDA</div>
+    </div>
+    <div class="monitor-screen">
+      <div class="screen-glow"></div><div class="screen-glitch"></div><div class="screen-scan"></div>
+
+      <div class="scene active" id="s-habbo">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <div class="habblet-logo">✦ HABBLET ✦</div>
+          <div class="dc-line"></div>
+          <div class="dc-icon">⚠</div>
+          <div class="habblet-disconnected">● DESCONECTADO</div>
+          <div class="dc-detail">última conexão: 00:00:00 · servidor: hotel-7</div>
+          <div class="dc-line"></div>
+        </div>
+        <br>
+        <button class="connect-btn" onclick="startDownload()">▶ RECONECTAR E BAIXAR</button>
+      </div>
+
+      <div class="scene" id="s-download">
+        <div class="dl-header">
+          <div class="dl-title">BAIXANDO ARQUIVOS</div>
+          <div class="dl-subtitle">origem: habblet.hotel · servidor-7 · criptografado</div>
+        </div>
+        <div class="file-list" id="file-list"></div>
+        <div class="dl-progress-wrap">
+          <div class="dl-progress-labels">
+            <span id="dl-filename">aguardando...</span>
+            <span id="dl-pct">0%</span>
+          </div>
+          <div class="dl-bar-track"><div class="dl-bar-fill" id="dl-bar"></div></div>
+          <div class="dl-log" id="dl-log">▶ inicializando protocolo de transferência...</div>
+        </div>
+        <div class="dl-done-hint" id="dl-done-hint">✦ clique em uma pasta para abrir ✦</div>
+      </div>
+
+      <div class="scene" id="s-msg">
+        <div class="msg-overlay" id="msg-overlay"></div>
+      </div>
+    </div>
+  </div>
+  <div class="monitor-stand"></div>
+  <div class="monitor-base"></div>
+</div>
+
+<script>
+(function(){
+  const c = document.getElementById('stars-container');
+  for(let i=0;i<140;i++){
+    const s = document.createElement('div');
+    s.className = 'star';
+    s.style.cssText = 'left:'+Math.random()*100+'%;top:'+Math.random()*65+'%;width:'+(Math.random()>0.7?'3px':'2px')+';height:'+(Math.random()>0.7?'3px':'2px')+';opacity:'+(0.2+Math.random()*0.8)+';animation:twinkle '+(1.5+Math.random()*2.5)+'s ease-in-out '+(Math.random()*3)+'s infinite';
+    c.appendChild(s);
+  }
+  const st = document.createElement('style');
+  st.textContent = '@keyframes twinkle{0%,100%{opacity:0.6;}50%{opacity:0.1;}}';
+  document.head.appendChild(st);
+})();
+
+const PEOPLE = [
+  {
+    file:'lottie.msg', size:'1.2 MB', ms:1600, theme:'theme-a', initials:'LT', name:'Lottie', time:'23:47',
+    title:'Pa',
+    body:'Richaaaaard, hoje é o seu dia e eu não podia deixar de te dizer algumas coisas que talvez você já saiba, mas não quero deixar de lembrar. Você é mais que meu irmão, é o meu melhor amigo (olha eu copiando a mesma coisa que você disse, mas é do fundo do meu coração), que sempre faz tudo parecer mais leve só por estar por perto, e eu agradeço por isso. Você sempre conseguiu me fazer sentir que podia ser eu mesma e eu ainda espero voltar com os nossos momentos jogando e fazendo maratona de séries e filmes (que só você escolhe, machista). Eu também sei que tenho andado um pouco sumida, mas sinto falta de passar raiva no Marvel Rivals, com você me fazendo jogar com personagens nada a ver.... e de passar raiva também pelos pontos que você tirava cada vez que eu falava algo errado, principalmente vendo o Mentalista (que eu ainda preciso decorar o significado, não tire mais pontos por não ter decorado ainda, por favor). Cada momento com você é uma lembrança que guardo com carinho e sempre guardarei. Eu aprecio a sua maneira de ser, muito mesmo, e espero que neste aniversário você sinta todo o carinho, a admiração e a alegria que você espalha por onde passa. Espero que cada sonho seu vire realidade e que a vida continue te presenteando com momentos especiais, porque você merece. Feliz aniversário, Richard! Obrigada por fazer parte da minha vida e que você continue sendo esse cara incrível que você é. Estou muito feliz por ter você como irmão e amigo, e sei que ainda vamos ter muitos momentos juntos! EU TE AMO!! (O texto bem viadinho igual você, te amo)',
+    images:['lottie1.png','lottie2.png'], showImageLabel:true
+  },
+  {
+    file:'dylan.msg', size:'980 KB', ms:1300, theme:'theme-b', initials:'DY', name:'Dylan', time:'23:51',
+    title:'ra',
+    body:'Cara, tendo uma conversa aqui com você. De verdade, sabe aquela pessoa que literalmente eu posso ver de vez em quando, nem que seja uma vez no mês ou em meses e que mesmo assim, não muda LITERALMENTE em nada a forma do tratamento? Esse exemplo é análogo em ti. E não só isso, a minha confiança contigo é imutável e eu simplesmente sei disso, mesmo próximo ou longe. Dentre todas as coisas que eu poderia dizer, é que você é definitivamente uma das pessoas mais confiáveis pra mim. Nunca tive motivos pra desgostar de você, tanto que realmente foi um prazer imenso conhecer você, das madrugadas irreais também que ocorriam no DCU. E sobretudo, eu não posso deixar de te dizer: que você pode contar comigo sempre que você quiser. Quando você quiser, não importa as circunstâncias, não importa o tempo que passe. No dia mais claro, na noite mais densa, quando o mal sucumbirá de novo a vossa presença, confia em mim nem que eu esteja soberbamente ocupado. Mesmo que você de novo reapareça naquela situação horrível que você passou que você sabe muito bem, eu fico mais do que feliz em poder te ver descansado, mais liberto de todo o caos de onde você esteve. E do fundo do meu coração, que você prospere em todo quesito da sua vida, que você nunca deixe de ser essa pessoa boa que aliás, fica percebível que muitos não merecem essa sua bondade. Isaque, obrigado por existir. Obrigado por ser essa pessoa que tu é, e eu tô orgulhoso por você ter chegado até aqui, esse hoje que você se tornou sendo uma versão BEM melhor. Todo parabéns pra você é muito pouco, tomara que você aproveite seus dias, e que a cada dia que passe você esteja numa versão melhor ainda sua. Tu merece campeão.'
+  },
+  {
+    file:'eliza.msg', size:'2.1 MB', ms:2000, theme:'theme-c', initials:'EL', name:'Eliza', time:'23:54',
+    title:'be',
+    body:'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae. In hac habitasse platea dictumst. Maecenas aliquet accumsan leo. Nullam dui mi, vulputate ac, ullamcorper eu, interdum in, dui. Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula vulputate sem tristique.'
+  },
+  {
+    file:'kael.msg', size:'756 KB', ms:1100, theme:'theme-d', initials:'KA', name:'Kael', time:'23:58',
+    title:'ns',
+    body:null,
+    images:['kael.png'], showImageLabel:false
+  },
+  {
+    file:'giselle.msg', size:'1.8 MB', ms:1900, theme:'theme-e', initials:'GI', name:'Giselle', time:'00:02',
+    title:'!!!!!',
+    body:null,
+    images:['giselle.png'], showImageLabel:false
+  }
+];
+
+const LOGS = ['▶ autenticando credenciais...','▶ túnel seguro estabelecido...','▶ descriptografando pacotes...','▶ verificando integridade...','▶ bypassando firewall...','▶ transferência em andamento...'];
+const doneSet = new Set();
+
+function showScene(id) {
+  document.querySelectorAll('.scene').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function folderSVG() {
+  return '<svg class="folder-svg" viewBox="0 0 22 18" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="5" width="22" height="13" rx="2" fill="#ffaa00"/><rect x="0" y="4" width="9" height="5" rx="2" fill="#ffaa00"/><rect x="1" y="6" width="20" height="11" rx="1.5" fill="#ffaa00" opacity="0.8"/><rect x="2" y="7" width="18" height="9" rx="1" fill="#ffaa00" opacity="0.25"/></svg>';
+}
+
+function startDownload() {
+  document.getElementById('topbar-title').textContent = 'TERMINAL · BAIXANDO ARQUIVOS';
+  showScene('s-download');
+  var list = document.getElementById('file-list');
+  list.innerHTML = '';
+  PEOPLE.forEach(function(p, i) {
+    var el = document.createElement('div');
+    el.className = 'file-item'; el.id = 'fi-' + i;
+    el.innerHTML = '<span class="fi-folder">'+folderSVG()+'</span><span class="fi-name">'+p.file+'</span><span class="fi-hint">▶ abrir</span><span class="fi-size">'+p.size+'</span><span class="fi-status" id="fis-'+i+'">○</span>';
+    list.appendChild(el);
+    setTimeout(function(){ el.classList.add('show'); }, i * 90);
+  });
+  var totalTime = PEOPLE.reduce(function(a,p){ return a+p.ms; }, 0);
+  var elapsed = 0, logIdx = 0;
+  var bar = document.getElementById('dl-bar');
+  var pctEl = document.getElementById('dl-pct');
+  var fnEl = document.getElementById('dl-filename');
+  var logEl = document.getElementById('dl-log');
+  function activateFile(i) {
+    if(i>=PEOPLE.length) return;
+    document.getElementById('fi-'+i).classList.add('active');
+    document.getElementById('fis-'+i).textContent = '⟳';
+    fnEl.textContent = PEOPLE[i].file;
+  }
+  function doneFile(i) {
+    var el = document.getElementById('fi-'+i);
+    el.classList.remove('active'); el.classList.add('done');
+    var st = document.getElementById('fis-'+i);
+    st.textContent = '✓'; st.style.color = '#00ff88';
+    doneSet.add(i);
+    (function(idx){ el.onclick = function(){ openMessage(idx); }; })(i);
+  }
+  activateFile(0);
+  var interval = setInterval(function() {
+    elapsed += 100;
+    var pct = Math.min(100, Math.round(elapsed/totalTime*100));
+    bar.style.width = pct+'%'; pctEl.textContent = pct+'%';
+    if(elapsed%800<100){ logEl.textContent = LOGS[logIdx%LOGS.length]; logIdx++; }
+    var acc = 0;
+    for(var i=0;i<PEOPLE.length;i++){
+      acc += PEOPLE[i].ms;
+      var el = document.getElementById('fi-'+i);
+      if(elapsed>=acc && !el.classList.contains('done')){
+        doneFile(i);
+        if(i+1<PEOPLE.length) activateFile(i+1);
+      }
+    }
+    if(pct>=100){
+      clearInterval(interval);
+      logEl.textContent = '▶ download concluído. clique em uma pasta.';
+      document.getElementById('dl-done-hint').classList.add('show');
+      document.getElementById('topbar-title').textContent = 'TERMINAL · ARQUIVOS PRONTOS';
+    }
+  }, 100);
+}
+
+function openMessage(i) {
+  var p = PEOPLE[i];
+  document.getElementById('topbar-title').textContent = 'ARQUIVO · ' + p.file.toUpperCase();
+  var overlay = document.getElementById('msg-overlay');
+  overlay.className = 'msg-overlay ' + p.theme;
+
+  var imagesHTML = '';
+  if(p.images) {
+    var isSingle = p.images.length === 1;
+    var labelHTML = p.showImageLabel ? '<div class="msg-images-label">// anexos: '+p.images.length+' imagem(ns) //</div>' : '';
+    var wraps = p.images.map(function(img){
+      return '<div class="msg-img-wrap" onclick="openLightbox(\''+img+'\')"><img src="'+img+'" alt="'+img+'" onerror="this.parentNode.classList.add(\'img-error\')"/><div class="img-name-label">'+img+'</div><span class="img-zoom-hint">🔍 ampliar</span></div>';
+    }).join('');
+    imagesHTML = '<div class="msg-images" id="open-images" style="display:none;">'+labelHTML+'<div class="msg-images-row'+(isSingle?' single':'')+'">'+wraps+'</div></div>';
+  }
+
+  var hasBody = p.body !== null && p.body !== undefined;
+
+  overlay.innerHTML =
+    '<button class="msg-back-btn" onclick="backToFiles()">‹ voltar aos arquivos</button>' +
+    '<div class="msg-from-row">' +
+      '<div class="msg-avatar">'+p.initials+'</div>' +
+      '<span class="msg-sender-name">'+p.name+'</span>' +
+      '<span class="msg-time">'+p.time+'</span>' +
+    '</div>' +
+    '<div class="msg-title-line" id="open-title"></div>' +
+    (hasBody ? '<div class="msg-body-text" id="open-body"></div>' : '') +
+    imagesHTML +
+    '<div class="msg-file-label">// arquivo: '+p.file+' · '+p.size+' · descriptografado //</div>';
+
+  var fileEl = document.getElementById('fi-'+i);
+  if(fileEl) fileEl.classList.add('opened');
+  showScene('s-msg');
+
+  function revealImages() {
+    var imgEl = document.getElementById('open-images');
+    if(!imgEl) return;
+    imgEl.style.display = 'block';
+    imgEl.style.opacity = '0';
+    imgEl.style.transform = 'translateY(10px)';
+    imgEl.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    setTimeout(function(){ imgEl.style.opacity='1'; imgEl.style.transform='translateY(0)'; }, 50);
+  }
+
+  typeWrite(document.getElementById('open-title'), p.title, 60, function() {
+    if(hasBody) {
+      setTimeout(function() {
+        typeWrite(document.getElementById('open-body'), p.body, 22, function() {
+          if(p.images) revealImages();
+        }, true);
+      }, 200);
+    } else {
+      setTimeout(revealImages, 400);
+    }
+  }, true);
+}
+
+function backToFiles() {
+  document.getElementById('topbar-title').textContent = 'TERMINAL · ARQUIVOS PRONTOS';
+  showScene('s-download');
+}
+
+function openLightbox(src) {
+  var existing = document.querySelector('.lightbox');
+  if(existing) existing.remove();
+  var lb = document.createElement('div');
+  lb.className = 'lightbox';
+  lb.innerHTML =
+    '<div class="lightbox-backdrop" onclick="closeLightbox()"></div>' +
+    '<img class="lightbox-img" src="'+src+'" alt="imagem ampliada"/>' +
+    '<button class="lightbox-close" onclick="closeLightbox()">✕ fechar</button>';
+  document.body.appendChild(lb);
+  lb._key = function(e){ if(e.key==='Escape') closeLightbox(); };
+  document.addEventListener('keydown', lb._key);
+}
+
+function closeLightbox() {
+  var lb = document.querySelector('.lightbox');
+  if(!lb) return;
+  document.removeEventListener('keydown', lb._key);
+  lb.style.opacity = '0';
+  lb.style.transition = 'opacity 0.15s';
+  setTimeout(function(){ lb.remove(); }, 160);
+}
+
+function typeWrite(el, text, speed, onDone, showCursor) {
+  var i=0; el.textContent='';
+  var cur=null;
+  if(showCursor){ cur=document.createElement('span'); cur.className='msg-cursor'; el.appendChild(cur); }
+  function tick() {
+    if(i<text.length){
+      if(cur) cur.insertAdjacentText('beforebegin',text[i++]);
+      else el.textContent+=text[i++];
+      setTimeout(tick, speed+Math.random()*speed*0.4);
+    } else { if(cur) cur.remove(); if(onDone) onDone(); }
+  }
+  tick();
+}
+</script>
+</body>
+</html>
